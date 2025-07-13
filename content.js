@@ -150,6 +150,26 @@
 //   new ImageBlocker();
 // }
 
+// 立即隱藏所有圖片的函數（在腳本開始時就執行）
+function hideAllImagesImmediately() {
+  // 立即隱藏所有現有圖片
+  document.querySelectorAll('img, picture, video, iframe').forEach(el => {
+    el.style.setProperty('display', 'none', 'important');
+  });
+
+  // 立即隱藏背景圖片
+  document.querySelectorAll('*').forEach(el => {
+    const style = window.getComputedStyle(el);
+    if (style.backgroundImage !== 'none') {
+      el.style.setProperty('background-image', 'none', 'important');
+    }
+  });
+}
+
+// 在腳本開始時立即執行一次隱藏
+console.log('Image Blocker: 腳本開始，立即隱藏圖片');
+hideAllImagesImmediately();
+
 // 動態CSS注入功能
 let styleElement = null;
 
@@ -179,6 +199,24 @@ function removeCSS() {
     styleElement.remove();
     styleElement = null;
   }
+}
+
+// 立即隱藏圖片的函數
+function hideImagesImmediately() {
+  if (!isEnabled) return;
+  
+  // 立即隱藏所有現有圖片
+  document.querySelectorAll('img, picture, video, iframe').forEach(el => {
+    el.style.setProperty('display', 'none', 'important');
+  });
+
+  // 立即隱藏背景圖片
+  document.querySelectorAll('*').forEach(el => {
+    const style = window.getComputedStyle(el);
+    if (style.backgroundImage !== 'none') {
+      el.style.setProperty('background-image', 'none', 'important');
+    }
+  });
 }
 
 // 確保動態新增的圖片也會被移除
@@ -215,15 +253,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       subtree: true
     });
     // 立即隱藏所有圖片
-    document.querySelectorAll('img, picture, video, iframe').forEach(el => {
-      el.style.setProperty('display', 'none', 'important');
-    });
-    document.querySelectorAll('*').forEach(el => {
-      const style = window.getComputedStyle(el);
-      if (style.backgroundImage !== 'none') {
-        el.style.setProperty('background-image', 'none', 'important');
-      }
-    });
+    hideImagesImmediately();
   } else if (request.action === 'disable') {
     console.log('Image Blocker: 禁用功能');
     isEnabled = false;
@@ -264,16 +294,37 @@ function initializeImageBlocker() {
         childList: true,
         subtree: true
       });
+      // 立即隱藏圖片
+      hideImagesImmediately();
     }
   });
 }
 
-// 確保在DOM準備好時才初始化
+// 立即執行初始化（不等待DOM）
+console.log('Image Blocker: 立即初始化');
+initializeImageBlocker();
+
+// 同時也監聽DOM變化，確保在DOM準備好時再次執行
 if (document.readyState === 'loading') {
   console.log('Image Blocker: DOM正在加載，等待DOMContentLoaded');
-  document.addEventListener('DOMContentLoaded', initializeImageBlocker);
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('Image Blocker: DOM已加載，再次執行隱藏');
+    if (isEnabled) {
+      hideImagesImmediately();
+    }
+  });
 } else {
-  console.log('Image Blocker: DOM已準備好，立即初始化');
-  initializeImageBlocker();
+  console.log('Image Blocker: DOM已準備好，立即執行隱藏');
+  if (isEnabled) {
+    hideImagesImmediately();
+  }
 }
+
+// 使用requestAnimationFrame確保在下一幀再次執行隱藏
+requestAnimationFrame(() => {
+  if (isEnabled) {
+    console.log('Image Blocker: 使用requestAnimationFrame再次隱藏');
+    hideImagesImmediately();
+  }
+});
 
